@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>聽單字，拼單字小工具</title>
+    <style>
+        /* CSS 樣式：讓介面看起來舒服一點 */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 50px;
+            background-color: #f4f4f9;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #speak-btn {
+            background-color: #007bff;
+            color: white;
+        }
+        #speak-btn:hover {
+            background-color: #0056b3;
+        }
+        #check-btn {
+            background-color: #28a745;
+            color: white;
+        }
+        #check-btn:hover {
+            background-color: #1e7e34;
+        }
+        #word-input {
+            padding: 10px;
+            font-size: 20px;
+            margin: 15px 0;
+            width: 80%;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            text-align: center;
+        }
+        #feedback {
+            margin-top: 20px;
+            font-size: 20px;
+            min-height: 50px; /* 確保有足夠空間顯示訊息 */
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎧 聽單字，拼單字</h1>
+
+    <button id="speak-btn">點我聽單字</button>
+
+    <input type="text" id="word-input" placeholder="請在這裡輸入拼字" autofocus>
+
+    <button id="check-btn">檢查拼字</button>
+
+    <div id="feedback">點擊「聽單字」開始！</div>
+    
+    <button id="next-btn" style="display:none;">下一個單字</button>
+</div>
+
+<script>
+    // 單字庫：您可以隨時在這裡增加或修改單字
+    const wordList = [
+        "help", "shy", "bunny", "gun", "elephant", 
+        "color", "candy", "add", "any", "air"
+    ];
+
+    let currentWord = "";
+    
+    const speakBtn = document.getElementById('speak-btn');
+    const checkBtn = document.getElementById('check-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const wordInput = document.getElementById('word-input');
+    const feedbackDiv = document.getElementById('feedback');
+    
+    // --- 核心邏輯：選取與發音 ---
+
+    function getNewWord() {
+        // 隨機選取一個單字
+        const randomIndex = Math.floor(Math.random() * wordList.length);
+        currentWord = wordList[randomIndex];
+        
+        // 重設介面
+        wordInput.value = '';
+        wordInput.disabled = false;
+        checkBtn.style.display = 'inline';
+        nextBtn.style.display = 'none';
+        feedbackDiv.textContent = '請聽單字後輸入拼字。';
+        
+        // 立即播放單字
+        speakWord(currentWord);
+    }
+    
+    function speakWord(word) {
+        // 使用瀏覽器的文字轉語音 (Text-to-Speech, TTS) 功能
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(word);
+            
+            // 設定語音為英文 (美式或英式，取決於瀏覽器設定)
+            // 建議設定語言，確保發音準確
+            utterance.lang = 'en-US'; 
+            
+            window.speechSynthesis.speak(utterance);
+        } else {
+            alert("抱歉，您的瀏覽器不支援文字轉語音功能。");
+        }
+    }
+
+    // --- 核心邏輯：檢查答案 ---
+
+    function checkSpelling() {
+        const input = wordInput.value.trim().toLowerCase();
+        
+        if (input === "") {
+            feedbackDiv.innerHTML = "🤔 請先輸入拼字喔！";
+            return;
+        }
+
+        if (input === currentWord) {
+            // 答案正確
+            feedbackDiv.innerHTML = "🎉 **太棒了！拼字完全正確！** 🎉";
+            wordInput.disabled = true; // 答對後鎖住輸入框
+            checkBtn.style.display = 'none';
+            nextBtn.textContent = "下一個單字";
+            nextBtn.style.display = 'inline';
+            speakWord("Excellent!"); // 唸出鼓勵的話
+        } else {
+            // 答案錯誤
+            feedbackDiv.innerHTML = `❌ **答錯了。** 正確答案是：**${currentWord}**`;
+            // 可選：讓孩子看見答案後，再點擊下一個
+            checkBtn.style.display = 'none';
+            nextBtn.textContent = "再試下一個";
+            nextBtn.style.display = 'inline';
+            speakWord("Try again."); // 唸出鼓勵的話
+        }
+    }
+    
+    // --- 事件監聽 (Listeners) ---
+
+    // 點擊「聽單字」按鈕，重新播放單字
+    speakBtn.addEventListener('click', () => {
+        if (currentWord) {
+            speakWord(currentWord);
+        } else {
+            // 第一次點擊時，開始遊戲
+            getNewWord();
+        }
+    });
+
+    // 點擊「檢查拼字」按鈕
+    checkBtn.addEventListener('click', checkSpelling);
+    
+    // 點擊「下一個單字」按鈕
+    nextBtn.addEventListener('click', getNewWord);
+    
+    // 允許在輸入框按 Enter 鍵直接檢查
+    wordInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter' && checkBtn.style.display !== 'none') {
+            checkSpelling();
+        }
+    });
+    
+    // 初始化：第一次載入時先取得單字
+    getNewWord();
+    
+</script>
+
+</body>
+</html>
